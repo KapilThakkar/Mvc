@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using HtmlGenerationWebSite;
 using Microsoft.AspNet.Builder;
 using Microsoft.AspNet.Mvc.TagHelpers;
+using Microsoft.AspNet.Testing;
 using Microsoft.Framework.DependencyInjection;
 using Microsoft.Framework.WebEncoders;
 using Xunit;
@@ -54,6 +55,12 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
         [InlineData("Input", null)]
         public async Task HtmlGenerationWebSite_GeneratesExpectedResults(string action, string antiforgeryPath)
         {
+            // This uses FileVersionProvider which uses Uri.TryCreate - https://github.com/aspnet/External/issues/21
+            if (TestPlatformHelper.IsMono && (action == "Link" || action == "Script" || action == "Image"))
+            {
+                return;
+            }
+
             // Arrange
             var server = TestHelper.CreateServer(_app, SiteName, _configureServices);
             var client = server.CreateClient();
@@ -77,7 +84,10 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
 #if GENERATE_BASELINES
                 ResourceFile.UpdateFile(_resourcesAssembly, outputFile, expectedContent, responseContent);
 #else
-                Assert.Equal(expectedContent.Trim(), responseContent, ignoreLineEndingDifferences: true);
+                Assert.Equal(
+                    ContentNormalizer.GetNormalizedContent(expectedContent.Trim()),
+                    responseContent,
+                    ignoreLineEndingDifferences: true);
 #endif
             }
             else
@@ -89,7 +99,10 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
                 ResourceFile.UpdateFile(_resourcesAssembly, outputFile, expectedContent, responseContent);
 #else
                 expectedContent = string.Format(expectedContent, forgeryToken);
-                Assert.Equal(expectedContent.Trim(), responseContent, ignoreLineEndingDifferences: true);
+                Assert.Equal(
+                    ContentNormalizer.GetNormalizedContent(expectedContent.Trim()),
+                    responseContent,
+                    ignoreLineEndingDifferences: true);
 #endif
             }
         }
@@ -104,6 +117,12 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
         [InlineData("Script", null)]
         public async Task HtmlGenerationWebSite_GenerateEncodedResults(string action, string antiforgeryPath)
         {
+            // This uses FileVersionProvider which uses Uri.TryCreate - https://github.com/aspnet/External/issues/21
+            if (TestPlatformHelper.IsMono && (action == "Link" || action == "Script"))
+            {
+                return;
+            }
+
             // Arrange
             var server = TestHelper.CreateServer(_app, SiteName, services =>
             {
@@ -133,7 +152,10 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
 #if GENERATE_BASELINES
                 ResourceFile.UpdateFile(_resourcesAssembly, outputFile, expectedContent, responseContent);
 #else
-                Assert.Equal(expectedContent.Trim(), responseContent, ignoreLineEndingDifferences: true);
+                Assert.Equal(
+                    ContentNormalizer.GetNormalizedContent(expectedContent.Trim()),
+                    responseContent,
+                    ignoreLineEndingDifferences: true);
 #endif
             }
             else
@@ -145,7 +167,10 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
                 ResourceFile.UpdateFile(_resourcesAssembly, outputFile, expectedContent, responseContent);
 #else
                 expectedContent = string.Format(expectedContent, forgeryToken);
-                Assert.Equal(expectedContent.Trim(), responseContent, ignoreLineEndingDifferences: true);
+                Assert.Equal(
+                    ContentNormalizer.GetNormalizedContent(expectedContent.Trim()),
+                    responseContent,
+                    ignoreLineEndingDifferences: true);
 #endif
             }
         }
@@ -188,7 +213,10 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
             ResourceFile.UpdateFile(_resourcesAssembly, outputFile, expectedContent, responseContent);
 #else
             expectedContent = string.Format(expectedContent, forgeryToken);
-            Assert.Equal(expectedContent.Trim(), responseContent, ignoreLineEndingDifferences: true);
+            Assert.Equal(
+                ContentNormalizer.GetNormalizedContent(expectedContent.Trim()),
+                responseContent,
+                ignoreLineEndingDifferences: true);
 #endif
         }
 
